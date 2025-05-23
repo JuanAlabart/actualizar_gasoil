@@ -1,0 +1,14 @@
+# Ignorar archivos Excel
+*.xlsx
+
+# Ignorar archivos temporales de Python
+*.pyc
+__pycache__/
+
+# Ignorar carpetas de PyInstaller
+build/
+dist/
+*.spec
+# Ignorar archivos extras
+extr/
+*.pbix

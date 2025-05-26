@@ -61,8 +61,10 @@ def procesar_cargas_gui(text_widget, btn, progress, percent_label):
         df_nuevos['Fecha'] = pd.to_datetime(df_nuevos['Fecha'], errors='coerce').dt.date
         df_base['Fecha'] = pd.to_datetime(df_base['Fecha'], errors='coerce').dt.date
 
-        if not df_base.empty and df_base['Fecha'].notna().any():
-            ultima_fecha = df_base['Fecha'].max()
+        # Filtrar fechas válidas antes de calcular el máximo
+        fechas_validas = df_base['Fecha'].dropna()
+        if not fechas_validas.empty:
+            ultima_fecha = max(fechas_validas)
         else:
             ultima_fecha = None
 
@@ -178,9 +180,8 @@ def procesar_cargas_gui(text_widget, btn, progress, percent_label):
             # Concatenar solo al final
             df_final = pd.concat([df_base, df_agregar], ignore_index=True)
 
-            # Aplicar formato a las columnas 'Fecha' y 'Litros' en df_final
-            df_final['Fecha'] = pd.to_datetime(df_final['Fecha'], errors='coerce', dayfirst=True).dt.strftime('%d/%m/%Y')
-            df_final['Litros'] = pd.to_numeric(df_final['Litros'], errors='coerce')
+            # --- Normalizar TODAS las fechas antes de guardar ---
+            df_final['Fecha'] = pd.to_datetime(df_final['Fecha'], errors='coerce', dayfirst=True)
 
             try:
                 progress['value'] = 95
@@ -211,8 +212,20 @@ def procesar_cargas_gui(text_widget, btn, progress, percent_label):
                 tab.tableStyleInfo = style
                 ws.add_table(tab)
 
-                # Busca la columna "Litros" por su encabezado
+                # Busca la columna "Fecha" por su encabezado y aplica formato de fecha real
                 header_row = 1
+                fecha_col_idx = None
+                for col in range(1, ws.max_column + 1):
+                    if ws.cell(row=header_row, column=col).value == "Fecha":
+                        fecha_col_idx = col
+                        break
+
+                if fecha_col_idx:
+                    for row in range(2, ws.max_row + 1):  # Empieza en 2 para saltar encabezado
+                        cell = ws.cell(row=row, column=fecha_col_idx)
+                        cell.number_format = 'DD/MM/YYYY'
+
+                # Busca la columna "Litros" por su encabezado
                 litros_col_idx = None
                 for col in range(1, ws.max_column + 1):
                     if ws.cell(row=header_row, column=col).value == "Litros":
@@ -220,7 +233,7 @@ def procesar_cargas_gui(text_widget, btn, progress, percent_label):
                         break
 
                 if litros_col_idx:
-                    for row in range(2, ws.max_row + 1):  # Empieza en 2 para saltar encabezado
+                    for row in range(2, ws.max_row + 1):
                         cell = ws.cell(row=row, column=litros_col_idx)
                         cell.number_format = '0.000'
 
